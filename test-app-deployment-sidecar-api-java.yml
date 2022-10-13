@@ -1,6 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  annotations:
+    rollme: randAlphaNum 5 | quote
   labels:
     app: test-app-deployment-sidecar-api-java
   name: test-app-deployment-sidecar-api-java
@@ -22,7 +24,7 @@ spec:
             - containerPort: 8080
           env:
             - name: CONJUR_SECRET_DB_PASSWORD
-              value: secret/conjur-safe/db-passwords
+              value: 51c3qqWb6NO
             - name: CONJUR_SECRET_DB_HOSTNAME
               value: postgresql.conjur-app-api.svc.cluster.local:5432
             - name: CONJUR_SECRET_DB_NAME
@@ -36,27 +38,86 @@ spec:
           - mountPath: /run/conjur
             name: conjur-access-token
             readOnly: true
-        - image: cyberark/conjur-authn-k8s-client:0.21.0
-          imagePullPolicy: IfNotPresent
-          name: authenticator
-          env:
-            - name: CONTAINER_MODE
-              value: sidecar
-            - name: MY_POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: MY_POD_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-          envFrom:
-            - configMapRef:
-                name: test-app-deployment-sidecar-api-java-cm
-          volumeMounts:
-            - mountPath: /run/conjur
-              name: conjur-access-token
+        # - image: cyberark/conjur-authn-k8s-client:0.21.0
+        #   imagePullPolicy: IfNotPresent
+        #   name: authenticator
+        #   env:
+        #     - name: CONTAINER_MODE
+        #       value: sidecar
+        #     - name: MY_POD_NAME
+        #       valueFrom:
+        #         fieldRef:
+        #           fieldPath: metadata.name
+        #     - name: MY_POD_NAMESPACE
+        #       valueFrom:
+        #         fieldRef:
+        #           fieldPath: metadata.namespace
+        #   envFrom:
+        #     - configMapRef:
+        #         name: test-app-deployment-sidecar-api-java-cm
+        #   volumeMounts:
+        #     - mountPath: /run/conjur
+        #       name: conjur-access-token
       volumes:
         - name: conjur-access-token
           emptyDir:
             medium: Memory
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-app-deployment-sidecar-api-java-cm
+data:
+  CONJUR_ACCOUNT: quasys-local
+  CONJUR_APPLIANCE_URL: 'https://master.quasys.com'
+  TEST: 'Password123'
+  CONJUR_AUTHN_URL: "https://master.quasys.com/authn-k8s/cluster-local"
+  CONJUR_AUTHN_LOGIN: host/test-app-deployment-sidecar-api-java
+  CONJUR_AUTHN_TOKEN_FILE: /var/run/conjur/access-token
+  CONJUR_SSL_CERTIFICATE: |
+    -----BEGIN CERTIFICATE-----
+    MIIDqjCCApKgAwIBAgIUSvatJDmXG0tjTuiqSDdOXftezNowDQYJKoZIhvcNAQEL
+    BQAwRzEVMBMGA1UECgwMcXVhc3lzLWxvY2FsMRIwEAYDVQQLDAlDb25qdXIgQ0Ex
+    GjAYBgNVBAMMEW1hc3Rlci5xdWFzeXMuY29tMB4XDTIyMDgyMDE5MjAwM1oXDTMy
+    MDgxNzE5MjAwM1owHDEaMBgGA1UEAwwRbWFzdGVyLnF1YXN5cy5jb20wggEiMA0G
+    CSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCwt8+UiiwjMb4RSEYk1mtUv9+Wqxx3
+    wfhfgIpuaDvpHQvl4j8cjhKkmgKdVKw9h4H77V4Zjodf7L0QTEACU4+H+F7aspYT
+    lkAnUMmXbGbW/nXnCksjU6dns7lmF+06ca+wNMBE/U/oBHiA7lyAvgWN6JrN3hAq
+    qAoWBnlq0qIN4ObxogV4luJRdp1nU210aQTkz/5x4JZRNImLkgAUKlZML92c5otT
+    XOtCg0IOiSUKKzcPBYNN33+2UPNOFvAnNr7hqghyqDouDCP6w1xki6LiXxynVptQ
+    y+BJyoD4+5Ukky6xj3GOyfkKbh8fe5y9tddjhRIqDiiw9IF9uPujCdpdAgMBAAGj
+    gbgwgbUwDgYDVR0PAQH/BAQDAgWgMB0GA1UdDgQWBBTaOaPuXmtLDTJVv++VYBiQ
+    r9gHCTCBgwYDVR0RBHwweoIRbWFzdGVyLnF1YXN5cy5jb22CEW1hc3Rlci5xdWFz
+    eXMuY29tghNzdGFuZGJ5MS5xdWFzeXMuY29tghNzdGFuZGJ5Mi5xdWFzeXMuY29t
+    ghNzdGFuZGJ5My5xdWFzeXMuY29tghNzdGFuZGJ5NC5xdWFzeXMuY29tMA0GCSqG
+    SIb3DQEBCwUAA4IBAQBpMhCXnk/QFKsS/Ny27i6lSHsNgjoj9DzBHt9xW6KQ0U4z
+    hubcwO9CLg0db9h76vuDrGhdzOJJ4VOQ2s/lLcFt+TPAWdknlLgvR7hop5a8+67v
+    aJkxuZagHj5fIWBuZRVw4dAmwQOzcUsOwEv5oDuEYZ34r5o1VfrAE9tvRNasnJJS
+    cSn/tROJOd1GBsZlSv9/zP10S2brnWs+SW2Uk9mgE9HvH/3C9qwjfAPdUaTNGRNe
+    X1nUESj6HsA6LofmGE9BzUzGGSpFyeQhaYZxnp2IVsgdfY3jKkw3xJ+MtTocDpw8
+    mrVZfE1HX/ewOBA8ncWMXAslC5TVWPfTd/2Fo+d5
+    -----END CERTIFICATE-----
+    -----BEGIN CERTIFICATE-----
+    MIID9jCCAt6gAwIBAgIJAM+IqtDqRmCzMA0GCSqGSIb3DQEBCwUAMEcxFTATBgNV
+    BAoMDHF1YXN5cy1sb2NhbDESMBAGA1UECwwJQ29uanVyIENBMRowGAYDVQQDDBFt
+    YXN0ZXIucXVhc3lzLmNvbTAeFw0yMjA4MjAxOTE5NTlaFw0zMjA4MTcxOTE5NTla
+    MEcxFTATBgNVBAoMDHF1YXN5cy1sb2NhbDESMBAGA1UECwwJQ29uanVyIENBMRow
+    GAYDVQQDDBFtYXN0ZXIucXVhc3lzLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEP
+    ADCCAQoCggEBAPiuosUmumpO5kuyU2J0Zg0X+uSMgTffZSJNZx9kxMS2SOkzrew1
+    0jDygQAu1jAuTulkD2Sb5RpMWtDIaFCaaik0V37WDRYUnD2GNsvnROKsTzW4CW5D
+    Q04Ra4fHXaqY70VzFN2YRvpSGR/hIx2iCavIh0p5Er+HdlPrh530+mxhDtL4JAM+
+    KABkmbE5Pk16Tgh+NcGL6IwHpiTKINOsqjt2Z5zawp/pmamqRZzJPyI86nY+VOrj
+    fTgFQ2RQfjYHKJuzWSn4Lkeg11tJnf9nzckBQOnuGYXqlqiV6Xsx09XktZt2QeoZ
+    RnsONSo/0Q/NPTtmqW36hTlLAsBz4LEiR5MCAwEAAaOB5DCB4TCBgwYDVR0RBHww
+    eoIRbWFzdGVyLnF1YXN5cy5jb22CEW1hc3Rlci5xdWFzeXMuY29tghNzdGFuZGJ5
+    MS5xdWFzeXMuY29tghNzdGFuZGJ5Mi5xdWFzeXMuY29tghNzdGFuZGJ5My5xdWFz
+    eXMuY29tghNzdGFuZGJ5NC5xdWFzeXMuY29tMB0GA1UdDgQWBBRU9WRF4XlpAznr
+    GyrjgzW/tizflDAfBgNVHSMEGDAWgBRU9WRF4XlpAznrGyrjgzW/tizflDAMBgNV
+    HRMEBTADAQH/MAsGA1UdDwQEAwIB5jANBgkqhkiG9w0BAQsFAAOCAQEA8z8EYXjz
+    sTdtCYfuhW46inkcbIo0LmLodKGLVtsAElEdTamtRpUKHo6PMucxSzpcVnch4HYj
+    FnX1D49FWmbmuq8cdTR4B644KTZZgKGdSWtsRWhoELRRG9ssGxbinwZPmFBzdbGm
+    z8dj1VKsDY/VeBhj7W3C+2pphu/ReFP+ClV5J6mkPc5duDsf/kEdl2jsxCJN7/Xu
+    dGEIpFfiwymcLTTtxnoW9RynJB7aBTJR0vU+bBVn3DYW2/haeT+i8MyvgfZt9caR
+    lxKp2RY1EI3kycY3SnXNm6k/j5qTmkGuiAaAkijX5h9+vQd6vL1xC5HOagoS+AmQ
+    s+ooa9RvxD8Oqg==
+    -----END CERTIFICATE-----

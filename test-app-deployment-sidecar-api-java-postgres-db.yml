@@ -1,6 +1,6 @@
 ---
-kind: DeploymentConfig
-apiVersion: apps.openshift.io/v1
+kind: Deployment
+apiVersion: v1
 metadata:
   name: postgresql
 spec:
@@ -10,19 +10,6 @@ spec:
       timeoutSeconds: 600
     resources: {}
     activeDeadlineSeconds: 21600
-  triggers:
-    - type: ImageChange
-      imageChangeParams:
-        automatic: true
-        containerNames:
-          - postgresql
-        from:
-          kind: ImageStreamTag
-          namespace: openshift
-          name: 'postgresql:10-el8'
-        lastTriggeredImage: >-
-          image-registry.openshift-image-registry.svc:5000/openshift/postgresql@sha256:7996048e281429e128774eb31b0b831190e60ae98d24e7e7610d912e928b47ef
-    - type: ConfigChange
   replicas: 1
   revisionHistoryLimit: 10
   test: false
