@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: test-app-deployment-sidecar-api-java
+  name: test-app-deployment-sidecar-api-java
+spec:
+  selector:
+    matchLabels:
+      app: test-app-deployment-sidecar-api-java
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: test-app-deployment-sidecar-api-java
+    spec:
+      containers:
+        - name: test-app-deployment-sidecar-api-java
+          image: quasys.jfrog.io/conjur-public-docker-local/test-app-java:0.12
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CONJUR_SECRET_DB_PASSWORD
+              value: secret/conjur-safe/db-passwords
+            - name: CONJUR_SECRET_DB_HOSTNAME
+              value: postgresql.conjur-app-api.svc.cluster.local:5432
+            - name: CONJUR_SECRET_DB_NAME
+              value: sampledb
+            - name: CONJUR_SECRET_DB_USERNAME
+              value: postgres
+          envFrom:
+          - configMapRef:
+              name: test-app-deployment-sidecar-api-java-cm
+          volumeMounts:
+          - mountPath: /run/conjur
+            name: conjur-access-token
+            readOnly: true
+        - image: cyberark/conjur-authn-k8s-client:0.21.0
+          imagePullPolicy: IfNotPresent
+          name: authenticator
+          env:
+            - name: CONTAINER_MODE
+              value: sidecar
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: MY_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          envFrom:
+            - configMapRef:
+                name: test-app-deployment-sidecar-api-java-cm
+          volumeMounts:
+            - mountPath: /run/conjur
+              name: conjur-access-token
+      volumes:
+        - name: conjur-access-token
+          emptyDir:
+            medium: Memory
